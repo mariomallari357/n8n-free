@@ -1,38 +1,30 @@
----
-title: N8n Free
-emoji: ⚡
-colorFrom: blue
-colorTo: gray
-sdk: docker
-pinned: false
-license: mit
-short_description: n8n on Hugging Face Spaces with Supabase
----
-
 # N8n Free
 
-This repository deploys n8n on Hugging Face Spaces with a Supabase Postgres backend.
-It ships with GitHub Actions to keep the Space alive, run health checks, and update n8n.
+This fork deploys n8n on a free Render web service with a Supabase Postgres
+database. Render builds the pinned official n8n image from `Dockerfile`, and
+`render.yaml` keeps the non-secret deployment configuration in source control.
 
-## Quick start
+## Architecture
 
-- Fork this repo on GitHub.
-- Create a Supabase project and run the keep-alive SQL.
-- Create a Hugging Face Space (Docker) linked to your fork.
-- Add Hugging Face Space secrets and variables (tables below).
-- Add GitHub Actions secrets and variables (tables below).
-- Trigger the push or update workflow once.
+- **GitHub** stores the deployment configuration and triggers Render deploys.
+- **Render Free** runs the n8n container in Singapore.
+- **Supabase Free** persists workflows, credentials, and execution metadata.
+- **GitHub Actions** checks n8n every ten minutes and keeps Supabase active.
 
-## Deployment guide (Hugging Face Spaces only)
+Render Free services sleep after 15 minutes without inbound traffic. The
+keep-alive workflow reduces sleeping, but scheduled GitHub Actions can be
+delayed. This setup is suitable for personal and low-stakes automation, not
+strict always-on production workloads.
+
+## Deploy
 
 ### 1. Fork the repository
 
-Fork this repo to your GitHub account.
+Fork this repository to your GitHub account.
 
-### 2. Create a Supabase project
+### 2. Prepare Supabase
 
-1. Create a new project at Supabase.
-2. In **SQL Editor**, run:
+Create a Supabase project and run this in the SQL Editor:
 
 ```sql
 CREATE TABLE "keep-alive" (
@@ -42,151 +34,77 @@ CREATE TABLE "keep-alive" (
   CONSTRAINT "keep-alive_pkey" PRIMARY KEY (id)
 );
 INSERT INTO "keep-alive"(name) VALUES ('ping');
+ALTER TABLE "keep-alive" ENABLE ROW LEVEL SECURITY;
+GRANT SELECT ON TABLE "keep-alive" TO anon, authenticated;
+CREATE POLICY "Allow keep-alive reads"
+ON "keep-alive"
+FOR SELECT
+TO anon, authenticated
+USING (true);
 ```
 
-3. Enable SSL in **Project Settings > Database > SSL Configuration**.
-4. In the **Connect** panel, select the **Session pooler** and collect its host,
-   port, database user, password, and database name. The Session pooler is the
-   IPv4-compatible choice for a persistent container; use the direct connection
-   only when the Space can reach the project's IPv6 database endpoint.
+Enable SSL enforcement in **Project Settings > Database**, then open the
+**Connect** panel and select the IPv4-compatible **Session pooler**. Keep the
+host, port, database, user, password, and CA certificate available.
 
-### 3. Create a Hugging Face Space (Docker)
+### 3. Deploy the Render Blueprint
 
-1. Create a new Space and choose **Docker** as the SDK.
-2. Link it to your forked GitHub repository.
-3. Pick a free hardware option.
+1. Sign in to Render with the GitHub account that owns the fork.
+2. Choose **New > Blueprint** and connect the fork.
+3. Render reads `render.yaml`. Enter these prompted secret values:
 
-### 4. Configure Hugging Face Space secrets
-
-Add these as **Secrets** in the Space settings:
-
-| Secret | Value |
+| Key | Value |
 | --- | --- |
-| `DB_POSTGRESDB_HOST` | Supabase database host |
-| `DB_POSTGRESDB_PORT` | Supabase database port |
-| `DB_POSTGRESDB_DATABASE` | `postgres` (or your database name) |
-| `DB_POSTGRESDB_USER` | Supabase database user |
+| `DB_POSTGRESDB_HOST` | Supabase Session pooler host |
+| `DB_POSTGRESDB_PORT` | `5432` |
+| `DB_POSTGRESDB_DATABASE` | `postgres` |
+| `DB_POSTGRESDB_USER` | `postgres.<project-ref>` |
 | `DB_POSTGRESDB_PASSWORD` | Supabase database password |
-| `DB_POSTGRESDB_SSL_CA` | Supabase SSL certificate (full PEM) |
-| `N8N_ENCRYPTION_KEY` | Random string, keep it stable |
+| `DB_POSTGRESDB_SSL_CA` | Full Supabase CA certificate PEM |
+| `N8N_ENCRYPTION_KEY` | Stable random secret; never rotate after saving credentials |
 
-### 5. Configure Hugging Face Space variables
+4. Confirm the service plan is **Free** and deploy the Blueprint.
+5. Open `https://<service>.onrender.com/healthz/readiness` and confirm it
+   returns a successful response.
+6. Open the service URL and create the initial n8n owner account.
 
-Add these as **Variables** in the Space settings:
+The Blueprint derives `N8N_HOST`, `N8N_EDITOR_BASE_URL`, and `WEBHOOK_URL`
+from Render's assigned service URL, so no manual hostname configuration is
+required.
 
-| Variable | Value |
-| --- | --- |
-| `DB_TYPE` | `postgresdb` |
-| `DB_POSTGRESDB_SCHEMA` | `public` |
-| `N8N_PORT` | `7860` |
-| `N8N_PROTOCOL` | `https` |
-| `N8N_HOST` | `<owner>-<space>.hf.space` |
-| `N8N_EDITOR_BASE_URL` | `https://<owner>-<space>.hf.space` |
-| `WEBHOOK_URL` | `https://<owner>-<space>.hf.space` |
-| `N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS` | `true` |
-| `N8N_PUSH_BACKEND` | `websocket` |
-| `DB_POSTGRESDB_SSL_REJECT_UNAUTHORIZED` | `true` |
-| `N8N_PROXY_HOPS` | `1` |
-| `GENERIC_TIMEZONE` | Your timezone (optional) |
-| `TZ` | Your timezone (optional) |
+## Keep-alive automation
 
-Optional execution retention settings:
+In **GitHub > Settings > Secrets and variables > Actions**, add:
 
-| Variable | Value |
-| --- | --- |
-| `EXECUTIONS_DATA_SAVE_ON_PROGRESS` | `false` |
-| `EXECUTIONS_DATA_SAVE_ON_ERROR` | `all` |
-| `EXECUTIONS_DATA_SAVE_ON_SUCCESS` | `none` |
-| `EXECUTIONS_DATA_SAVE_MANUAL_EXECUTIONS` | `false` |
-| `EXECUTIONS_DATA_PRUNE` | `true` |
-| `EXECUTIONS_DATA_MAX_AGE` | `168` |
+Repository variable:
 
-### 6. Configure GitHub Actions secrets and variables
-
-Add these in your forked repo under **Settings > Secrets and variables > Actions**.
-
-Secrets:
-
-| Secret | Required | Description |
-| --- | --- | --- |
-| `HF_TOKEN` | Yes | Hugging Face token with write access |
-| `SUPABASE_URL` | Yes | Supabase project URL (for keep-alive) |
-| `SUPABASE_KEY` | Yes | Supabase `anon public` key (for keep-alive) |
-| `TG_TOKEN` | No | Telegram bot token (healthcheck alerts) |
-| `TG_CHAT_ID` | No | Telegram chat ID (healthcheck alerts) |
-
-Variables:
-
-| Variable | Required | Description |
-| --- | --- | --- |
-| `HF_REPO` | Yes | Space repo path: `<owner>/<space>` |
-
-### 7. Confirm HF_REPO is set
-
-`HF_REPO` is used to build the Hugging Face Space git remote. Make sure the
-Actions variable is set to `owner/space` for your fork.
-
-## Operations and automation
-
-### Update n8n version
-
-Run the `update-n8n.yml` workflow manually. The scheduled trigger is commented
-out; uncomment it if you want automatic updates. It:
-
-1. Checks the latest stable n8n version tag via GitHub `releases/latest` API (pre-releases are excluded).
-2. Checks `version-blocklist.txt` (currently includes `2.10.0`).
-3. Updates the `Dockerfile` tag only when the latest version is not blacklisted.
-4. Commits the change.
-5. Pushes to the Hugging Face Space.
-
-To block additional versions, edit `version-blocklist.txt` and add one version
-per line.
-
-### Push to Hugging Face on every commit
-
-`push-to-huggingface.yml` pushes `main` to your Space whenever you push to GitHub.
-
-### Keep-alive workflows
-
-- `huggingface-keep-alive.yml` pings your Space URL.
-- `supabase-keep-alive.yml` pings the `keep-alive` table via REST.
-Both schedules are commented out by default; uncomment them to enable cron.
-
-### Health checks and rebuilds
-
-`healthcheck.yml` runs every hour and calls `healthcheck-rebuild.sh`.
-It checks `https://<owner>-<space>.hf.space/healthz/readiness` (derived from
-`HF_REPO`) and forces a rebuild if unhealthy.
-
-To run locally:
-
-```
-HF_REPO=<owner>/<space> \
-HF_TOKEN=<your_hf_token> \
-bash healthcheck-rebuild.sh
+```text
+RENDER_URL=https://<service>.onrender.com
 ```
 
-Optional Telegram alerts:
+Repository secrets:
 
+```text
+SUPABASE_URL=https://<project-ref>.supabase.co
+SUPABASE_KEY=<Supabase publishable key>
 ```
-TG_TOKEN=<bot_token> TG_CHAT_ID=<chat_id>
-```
 
-### Optional n8n workflow
+The workflows then:
 
-Import `Auto keep n8n alive and updates on n8n-free repo.json` into n8n if you want
-an in-app workflow for keep-alive and update triggers.
+- call n8n readiness every ten minutes;
+- call the Supabase `keep-alive` table daily;
+- optionally update the pinned n8n Docker image when manually dispatched.
 
-## Troubleshooting
+## Updating n8n
 
-- **Healthcheck fails with missing HF_REPO**: Set `HF_REPO` in GitHub
-  repo variables using `owner/space` format.
-- **Database SSL errors**: Ensure SSL is enabled in Supabase and
-  `DB_POSTGRESDB_SSL_CA` contains the full PEM certificate.
-- **Webhooks point to the wrong host**: Align `N8N_HOST`,
-  `N8N_EDITOR_BASE_URL`, and `WEBHOOK_URL` to the Space host.
+Run **Check for n8n Updates** from the GitHub Actions tab. It checks the latest
+stable n8n release, respects `version-blocklist.txt`, updates `Dockerfile`, and
+pushes the change. Render automatically deploys the new commit.
 
-## Security notes
+## Security and recovery
 
-Do not commit secrets. Use Hugging Face Space secrets and GitHub Actions secrets.
-
+- Never commit database passwords, API keys, or `N8N_ENCRYPTION_KEY`.
+- Back up `N8N_ENCRYPTION_KEY`; existing stored credentials cannot be decrypted
+  if it is lost or changed.
+- Supabase is the persistence layer. The Render Free filesystem is ephemeral.
+- Roll back a bad n8n update by reverting the Dockerfile version commit.

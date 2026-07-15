@@ -1,46 +1,42 @@
 # Repository Guidelines
 
-This repository is a template for running n8n on Hugging Face Spaces with a Supabase backend and GitHub Actions automation. Keep contributions small, automation-focused, and well documented.
+This repository deploys n8n to a Render Free web service with Supabase Postgres
+and GitHub Actions automation. Keep contributions small, automation-focused,
+and documented.
 
-## Project Structure & Module Organization
+## Project structure
 
-- `Dockerfile` pins the n8n image version used by the Space.
-- `.github/workflows/` contains automation for updates, keep-alive pings, healthchecks, and pushing to Hugging Face.
-- `healthcheck-rebuild.sh` is a local script that triggers a rebuild when health checks fail.
-- `rebuild.txt` is touched to force rebuilds.
-- `Auto keep n8n alive and updates on n8n-free repo.json` is the importable n8n workflow.
-- `README.md` is the primary setup and configuration guide.
+- `Dockerfile` pins the official n8n image version.
+- `render.yaml` defines the Render web service and its environment variables.
+- `.github/workflows/` contains update and keep-alive automation.
+- `Auto keep n8n alive and updates on n8n-free repo.json` is an optional
+  importable n8n workflow.
+- `README.md` is the primary setup guide.
+- `DEPLOYMENT.md` is the operator worksheet and verification checklist.
 
-## Build, Test, and Development Commands
+## Validation
 
-- `HF_REPO=owner/space N8N_HOST=space.hf.space bash healthcheck-rebuild.sh`
-  Runs the readiness check and rebuilds if unhealthy. Optional: `TG_TOKEN`, `TG_CHAT_ID` for Telegram alerts.
-- GitHub Actions are the main execution path. Use workflow dispatch in `.github/workflows/update-n8n.yml` to update the pinned n8n version.
+- Validate YAML and JSON after changing automation files.
+- Run `git diff --check` before committing.
+- Confirm `/healthz/readiness` after every live deployment.
+- Use workflow dispatch to test keep-alive actions after changing them.
 
-## Coding Style & Naming Conventions
+## Style and commits
 
 - No trailing whitespace.
-- YAML/JSON: 2-space indentation.
-- Shell scripts: keep `bash` shebangs and 4-space indentation in blocks.
-- Name workflow files with clear kebab-case (e.g., `update-n8n.yml`).
+- YAML and JSON use 2-space indentation.
+- Name workflow files with clear kebab-case names.
+- All commits must be signed off with `git commit -s`.
+- Update `README.md` when setup or runtime behavior changes.
 
-## Testing Guidelines
+## Security
 
-- No unit-test framework is configured.
-- Validate changes via GitHub Actions healthcheck workflows and manual runs of `healthcheck-rebuild.sh`.
-- If you add tests, document the framework and commands in `README.md` and wire them into CI.
+- Never commit passwords, API keys, database credentials, or the n8n encryption
+  key.
+- Store runtime secrets in Render and automation secrets in GitHub Actions.
+- Treat `N8N_ENCRYPTION_KEY` as a required recovery secret and keep it stable.
 
-## Commit & Pull Request Guidelines
+## Agent notes
 
-- Commit message conventions seen in history: `chore: Update n8n to version X` and `Revert "chore: Update n8n to version X"`.
-- All commits must be signed off: `git commit -s`.
-- PRs should describe workflow/Dockerfile changes, include linked issues if any, and update `README.md` when behavior or setup changes.
-
-## Security & Configuration Tips
-
-- Never commit secrets. Use GitHub Actions secrets/variables and Hugging Face Space settings.
-- Common secrets: `HF_TOKEN`, `SUPABASE_URL`, `SUPABASE_KEY`, database credentials.
-
-## Agent-Specific Notes
-
+- Preserve unrelated user changes.
 - If you use git worktrees, create them under `.git/wtm_data/`.

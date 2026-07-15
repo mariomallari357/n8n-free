@@ -1,16 +1,17 @@
 name: Supabase Keep-Alive
 
 on:
-  # schedule:
-  #   - cron: '0 3 * * *'
+  schedule:
+    - cron: '23 3 * * *'
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Supabase Keep-Alive Ping
+      - name: Supabase keep-alive ping
         run: |
-          curl "${{ secrets.SUPABASE_URL }}/rest/v1/keep-alive?select=*" \
+          curl --fail --show-error --silent \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/keep-alive?select=*" \
             -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
             -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}"

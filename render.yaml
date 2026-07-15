@@ -1,0 +1,73 @@
+services:
+  - type: web
+    name: n8n-free
+    runtime: docker
+    plan: free
+    region: singapore
+    branch: main
+    healthCheckPath: /healthz/readiness
+    maxShutdownDelaySeconds: 300
+    envVars:
+      - key: PORT
+        value: "5678"
+      - key: N8N_PORT
+        value: "5678"
+      - key: DB_TYPE
+        value: postgresdb
+      - key: DB_POSTGRESDB_SCHEMA
+        value: public
+      - key: DB_POSTGRESDB_HOST
+        sync: false
+      - key: DB_POSTGRESDB_PORT
+        sync: false
+      - key: DB_POSTGRESDB_DATABASE
+        sync: false
+      - key: DB_POSTGRESDB_USER
+        sync: false
+      - key: DB_POSTGRESDB_PASSWORD
+        sync: false
+      - key: DB_POSTGRESDB_SSL_CA
+        sync: false
+      - key: DB_POSTGRESDB_SSL_REJECT_UNAUTHORIZED
+        value: "true"
+      - key: N8N_ENCRYPTION_KEY
+        sync: false
+      - key: N8N_PROTOCOL
+        value: https
+      - key: N8N_HOST
+        fromService:
+          type: web
+          name: n8n-free
+          envVarKey: RENDER_EXTERNAL_HOSTNAME
+      - key: N8N_EDITOR_BASE_URL
+        fromService:
+          type: web
+          name: n8n-free
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: WEBHOOK_URL
+        fromService:
+          type: web
+          name: n8n-free
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: N8N_PROXY_HOPS
+        value: "1"
+      - key: N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS
+        value: "true"
+      - key: N8N_PUSH_BACKEND
+        value: websocket
+      - key: GENERIC_TIMEZONE
+        value: Asia/Shanghai
+      - key: TZ
+        value: Asia/Shanghai
+      - key: EXECUTIONS_DATA_SAVE_ON_PROGRESS
+        value: "false"
+      - key: EXECUTIONS_DATA_SAVE_ON_ERROR
+        value: all
+      - key: EXECUTIONS_DATA_SAVE_ON_SUCCESS
+        value: none
+      - key: EXECUTIONS_DATA_SAVE_MANUAL_EXECUTIONS
+        value: "false"
+      - key: EXECUTIONS_DATA_PRUNE
+        value: "true"
+      - key: EXECUTIONS_DATA_MAX_AGE
+        value: "168"
