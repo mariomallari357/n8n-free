@@ -21,7 +21,6 @@ It ships with GitHub Actions to keep the Space alive, run health checks, and upd
 - Create a Hugging Face Space (Docker) linked to your fork.
 - Add Hugging Face Space secrets and variables (tables below).
 - Add GitHub Actions secrets and variables (tables below).
-- Update the Space remote in workflows and the local healthcheck script.
 - Trigger the push or update workflow once.
 
 ## Deployment guide (Hugging Face Spaces only)
@@ -46,8 +45,10 @@ INSERT INTO "keep-alive"(name) VALUES ('ping');
 ```
 
 3. Enable SSL in **Project Settings > Database > SSL Configuration**.
-4. Collect database connection details from **Project Settings > Database**:
-   host, port, database user, password, and database name.
+4. In the **Connect** panel, select the **Session pooler** and collect its host,
+   port, database user, password, and database name. The Session pooler is the
+   IPv4-compatible choice for a persistent container; use the direct connection
+   only when the Space can reach the project's IPv6 database endpoint.
 
 ### 3. Create a Hugging Face Space (Docker)
 
@@ -75,7 +76,7 @@ Add these as **Variables** in the Space settings:
 
 | Variable | Value |
 | --- | --- |
-| `DB_TYPE` | `postgres` |
+| `DB_TYPE` | `postgresdb` |
 | `DB_POSTGRESDB_SCHEMA` | `public` |
 | `N8N_PORT` | `7860` |
 | `N8N_PROTOCOL` | `https` |
@@ -84,7 +85,7 @@ Add these as **Variables** in the Space settings:
 | `WEBHOOK_URL` | `https://<owner>-<space>.hf.space` |
 | `N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS` | `true` |
 | `N8N_PUSH_BACKEND` | `websocket` |
-| `N8N_DATABASE_SSL_REJECT_UNAUTHORIZED` | `true` |
+| `DB_POSTGRESDB_SSL_REJECT_UNAUTHORIZED` | `true` |
 | `N8N_PROXY_HOPS` | `1` |
 | `GENERIC_TIMEZONE` | Your timezone (optional) |
 | `TZ` | Your timezone (optional) |
@@ -153,7 +154,7 @@ Both schedules are commented out by default; uncomment them to enable cron.
 
 ### Health checks and rebuilds
 
-`healthcheck.yml` runs every 10 minutes and calls `healthcheck-rebuild.sh`.
+`healthcheck.yml` runs every hour and calls `healthcheck-rebuild.sh`.
 It checks `https://<owner>-<space>.hf.space/healthz/readiness` (derived from
 `HF_REPO`) and forces a rebuild if unhealthy.
 
@@ -188,3 +189,4 @@ an in-app workflow for keep-alive and update triggers.
 ## Security notes
 
 Do not commit secrets. Use Hugging Face Space secrets and GitHub Actions secrets.
+
