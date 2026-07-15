@@ -4,9 +4,9 @@ This fork deploys n8n on a free Render web service with a Supabase Postgres
 database. Render builds the pinned official n8n image from `Dockerfile`, and
 `render.yaml` keeps the non-secret deployment configuration in source control.
 
-The Dockerfile is pinned to the n8n 1.x line because the current 2.x line can
-exceed Render Free's memory ceiling during startup. Upgrade deliberately after
-moving to a larger instance.
+The Dockerfile pins a stable n8n release. Render Free has only 512 MB RAM, so
+watch the deployment logs after version upgrades; larger n8n releases may need
+a paid Render instance.
 
 ## Architecture
 
