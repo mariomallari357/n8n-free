@@ -73,9 +73,25 @@ jobs:
           echo "Current version in Dockerfile is: $CURRENT_VERSION"
           echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
 
+      - name: Keep the current major line on Render Free
+        id: check_major
+        if: steps.get_version.outputs.version != ''
+        run: |
+          CURRENT_MAJOR="${{ steps.get_current_version.outputs.version }}"
+          CURRENT_MAJOR="${CURRENT_MAJOR%%.*}"
+          LATEST_MAJOR="${{ steps.get_version.outputs.version }}"
+          LATEST_MAJOR="${LATEST_MAJOR%%.*}"
+          if [ "$CURRENT_MAJOR" != "$LATEST_MAJOR" ]; then
+            echo "Latest n8n major $LATEST_MAJOR is not applied to the current Render Free major line $CURRENT_MAJOR."
+            echo "Upgrade the Render service first, then remove this guard if desired."
+            echo "compatible=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "compatible=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Compare versions and update Dockerfile
         id: update_dockerfile
-        if: steps.check_blacklist.outputs.is_blacklisted != 'true' && steps.get_version.outputs.version != steps.get_current_version.outputs.version && steps.get_version.outputs.version != ''
+        if: steps.check_blacklist.outputs.is_blacklisted != 'true' && steps.check_major.outputs.compatible == 'true' && steps.get_version.outputs.version != steps.get_current_version.outputs.version && steps.get_version.outputs.version != ''
         run: |
           echo "New version found. Updating Dockerfile..."
           sed -i "s/n8nio\/n8n:${{ steps.get_current_version.outputs.version }}/n8nio\/n8n:${{ steps.get_version.outputs.version }}/g" Dockerfile

@@ -11,6 +11,8 @@ services:
         value: "5678"
       - key: N8N_PORT
         value: "5678"
+      - key: NODE_OPTIONS
+        value: "--max-old-space-size=384"
       - key: DB_TYPE
         value: postgresdb
       - key: DB_POSTGRESDB_SCHEMA
@@ -48,12 +50,19 @@ services:
           type: web
           name: n8n-free
           envVarKey: RENDER_EXTERNAL_URL
+      - key: N8N_WEBHOOK_URL
+        fromService:
+          type: web
+          name: n8n-free
+          envVarKey: RENDER_EXTERNAL_URL
       - key: N8N_PROXY_HOPS
         value: "1"
       - key: N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS
         value: "true"
       - key: N8N_PUSH_BACKEND
         value: websocket
+      - key: N8N_RUNNERS_ENABLED
+        value: "false"
       - key: GENERIC_TIMEZONE
         value: Asia/Shanghai
       - key: TZ

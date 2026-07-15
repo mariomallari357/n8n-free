@@ -4,6 +4,10 @@ This fork deploys n8n on a free Render web service with a Supabase Postgres
 database. Render builds the pinned official n8n image from `Dockerfile`, and
 `render.yaml` keeps the non-secret deployment configuration in source control.
 
+The Dockerfile is pinned to the n8n 1.x line because the current 2.x line can
+exceed Render Free's memory ceiling during startup. Upgrade deliberately after
+moving to a larger instance.
+
 ## Architecture
 
 - **GitHub** stores the deployment configuration and triggers Render deploys.
@@ -98,8 +102,10 @@ The workflows then:
 ## Updating n8n
 
 Run **Check for n8n Updates** from the GitHub Actions tab. It checks the latest
-stable n8n release, respects `version-blocklist.txt`, updates `Dockerfile`, and
-pushes the change. Render automatically deploys the new commit.
+stable n8n release, respects `version-blocklist.txt`, updates `Dockerfile` only
+within the current major line, and pushes the change. Render automatically
+deploys the new commit. Move to a larger Render instance before changing the
+major version.
 
 ## Security and recovery
 
