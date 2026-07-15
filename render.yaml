@@ -6,7 +6,6 @@ services:
     region: singapore
     branch: main
     healthCheckPath: /healthz/readiness
-    maxShutdownDelaySeconds: 300
     envVars:
       - key: PORT
         value: "5678"
