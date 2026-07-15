@@ -67,6 +67,10 @@ host, port, database, user, password, and CA certificate available.
 | `DB_POSTGRESDB_SSL_CA` | Full Supabase CA certificate PEM |
 | `N8N_ENCRYPTION_KEY` | Stable random secret; never rotate after saving credentials |
 
+The Blueprint also limits the Postgres pool to one connection and uses a
+longer startup timeout because Render Free can briefly delay outbound database
+connections.
+
 4. Confirm the service plan is **Free** and deploy the Blueprint.
 5. Open `https://<service>.onrender.com/healthz/readiness` and confirm it
    returns a successful response.

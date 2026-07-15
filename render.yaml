@@ -31,6 +31,16 @@ services:
         sync: false
       - key: DB_POSTGRESDB_SSL_REJECT_UNAUTHORIZED
         value: "true"
+      - key: DB_POSTGRESDB_SSL_ENABLED
+        value: "true"
+      - key: DB_POSTGRESDB_POOL_SIZE
+        value: "1"
+      - key: DB_POSTGRESDB_CONNECTION_TIMEOUT
+        value: "60000"
+      - key: DB_PING_TIMEOUT_MS
+        value: "15000"
+      - key: DB_PING_INTERVAL_SECONDS
+        value: "30"
       - key: N8N_ENCRYPTION_KEY
         sync: false
       - key: N8N_PROTOCOL
